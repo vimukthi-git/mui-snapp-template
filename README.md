@@ -8,6 +8,12 @@ This template uses TypeScript.
 npm run build
 ```
 
+## How to Serve
+
+```sh
+npm run serve
+```
+
 ## How to run tests
 
 ```sh

@@ -8,3 +8,7 @@ coverage
 
 # System
 .DS_Store
+
+# Project
+dist
+public/js
