@@ -1,6 +1,6 @@
 # Mina Snapp: Mui Snapp Template
 
-This template uses TypeScript.
+This is a Mina Snapp template built to work with [MUI](https://mui.com/). This template uses TypeScript.
 
 ## How to build
 
