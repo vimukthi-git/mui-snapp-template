@@ -1,8 +1,40 @@
-import { Field, SmartContract, state, State, method, UInt64, Mina, Party, PrivateKey, PublicKey, isReady } from 'snarkyjs';
+import { Field, SmartContract, state, State, method, UInt64, Mina, Party, PrivateKey, PublicKey, isReady, CircuitValue, Int64, prop, arrayProp } from 'snarkyjs';
 
 export { deploy, update, getSnappState };
 
 await isReady;
+
+export class RequiredProof extends CircuitValue {
+  @prop upperBound: Int64;
+  @prop lowerBound: Int64;
+
+  constructor(
+    upperBound: Int64,
+    lowerBound: Int64
+  ) {
+    super();
+    this.upperBound = upperBound;
+    this.lowerBound = lowerBound;
+  }
+}
+
+// Increase this constant to see the error in the `update` function 
+// 
+// "Encountered an error while evaluating the checked computation:
+//  ("Error: array_get_exn: index=8, length=10")
+// 
+//  Label stack trace:
+// "
+const MAX_REQUIRED_PROOFS = 4;
+export class RequiredProofs extends CircuitValue {
+  @arrayProp(RequiredProof, MAX_REQUIRED_PROOFS)
+  requiredProofs: Array<RequiredProof>;
+
+  constructor(requiredProofs: Array<RequiredProof>) {
+    super();
+    this.requiredProofs = requiredProofs;
+  }
+}
 
 /**
  * Basic Example
@@ -12,20 +44,18 @@ await isReady;
  * When the 'update' method is called, the Add contract adds Field(2) to its 'num' contract state.
  */
 export default class Add extends SmartContract {
-  @state(Field) num = State<Field>();
+  @state(RequiredProofs) proofs = State<RequiredProofs>();
 
   // initialization
-  deploy(initialBalance: UInt64, num: Field = Field(1)) {
+  deploy(initialBalance: UInt64, num: RequiredProofs) {
     super.deploy();
     this.balance.addInPlace(initialBalance);
-    this.num.set(num);
+    this.proofs.set(num);
   }
 
   @method async update() {
-    const currentState = await this.num.get();
-    const newState = currentState.add(2);
-    newState.assertEquals(currentState.add(2));
-    this.num.set(newState);
+    const currentState = await this.proofs.get();
+    console.log(currentState);
   }
 }
 
@@ -64,7 +94,9 @@ async function deploy() {
     const initialBalance = UInt64.fromNumber(1000000);
     const p = await Party.createSigned(account2);
     p.balance.subInPlace(initialBalance);
-    snapp.deploy(initialBalance);
+    snapp.deploy(initialBalance, new RequiredProofs([new RequiredProof(
+      new Int64(new Field(100000)),
+      new Int64(new Field(3000)))]));
   });
   await tx.send().wait();
 
